@@ -1,0 +1,36 @@
+services:
+  redis:
+    image: redis:7
+    container_name: ave_redis
+    restart: always
+    command: [
+      "redis-server",
+      "--appendonly", "yes",
+      "--appendfsync", "everysec",
+      "--save", "900", "1",
+      "--save", "300", "10",
+      "--save", "60", "10000"
+    ]
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli ping | grep PONG" ]
+      start_interval: 1s
+      start_period: 10s
+    volumes:
+      - redis_data:/data
+    ports:
+      - "${REDIS_PORT}:6379"
+
+  app:
+    container_name: ave_app
+    depends_on:
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env
+    build:
+      context: .
+    ports:
+      - "${APP_PORT}:${APP_PORT}"
+
+volumes:
+  redis_data:
